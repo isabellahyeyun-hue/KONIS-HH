@@ -27,28 +27,25 @@ nav{position:fixed;left:14px;right:14px;bottom:var(--nav);z-index:25;display:gri
 <div class="app">
   <header>
     <h1>손위생 관찰기록 PWA 시스템</h1>
-    <p id="headerText">현재 월 기록을 불러오는 중입니다.</p>
+    <p id="headerText" class="hidden">현재 월 기록을 불러오는 중입니다.</p>
   </header>
   <main class="content">
     <section class="panel active" data-tab="input">
       <div class="card">
         <h2>입력</h2>
-        <div class="meta">
-          <span>고정 관찰자: 정혜윤</span>
-          <span>저장 순서: validation → local save → stats update → google backup trigger → 파일 준비</span>
-        </div>
+        <div class="meta"></div>
         <form id="recordForm" novalidate>
           <input type="hidden" id="editId">
           <div class="grid2" style="margin-top:14px">
-            <div class="field"><label for="dateInput">날짜</label><input id="dateInput" type="date" required></div>
             <div class="field"><label for="observerInput">관찰자</label><input id="observerInput" class="readonly" type="text" value="정혜윤" readonly></div>
-            <div class="field"><label for="startInput">시작 시간</label><input id="startInput" type="time" required></div>
-            <div class="field"><label for="endInput">종료 시간</label><input id="endInput" type="time" required></div>
+            <div class="field"><label for="dateInput">날짜</label><input id="dateInput" type="date" required></div>
+            <div class="field"><label for="startInput">관찰 시작</label><input id="startInput" type="time" required></div>
+            <div class="field"><label for="endInput">관찰 종료</label><input id="endInput" type="time" required></div>
             <div class="field"><label for="jobSelect">직종</label><select id="jobSelect" required></select></div>
             <div class="field"><label for="locationSelect">장소</label><select id="locationSelect" required></select></div>
           </div>
           <div class="field" style="margin-top:14px"><div class="label">행위</div><div class="choices moment" id="momentChoices"></div></div>
-          <div class="field" style="margin-top:14px"><div class="label">수행값</div><div class="choices three" id="actionChoices"></div></div>
+          <div class="field" style="margin-top:14px"><div class="label">수행</div><div class="choices three" id="actionChoices"></div></div>
           <div class="field" style="margin-top:14px"><div class="label">장갑</div><div class="choices two" id="gloveChoices"></div></div>
           <div class="row" style="margin-top:16px">
             <button class="primary" id="saveBtn" type="submit">저장</button>
@@ -134,8 +131,8 @@ const RECORD_KEYS = ["id", "date", "startTime", "endTime", "observer", "job", "l
 const PAIR_KEYS = ["code", "label"];
 const PDF_SIZE = { width: 595.28, height: 841.89 };
 const JOBS = [
-  { code: "11", label: "의사", pdf: "Doctor" },
   { code: "2", label: "간호사", pdf: "Nurse" },
+  { code: "11", label: "의사", pdf: "Doctor" },
   { code: "31", label: "임상병리사", pdf: "Clinical Lab" },
   { code: "32", label: "물리치료사", pdf: "Physical Therapist" },
   { code: "33", label: "방사선사", pdf: "Radiologic Technologist" },
@@ -146,8 +143,8 @@ const LOCS = [
   { code: "29", label: "3병동", pdf: "3Ward" },
   { code: "29", label: "4병동", pdf: "4Ward" },
   { code: "5", label: "외래", pdf: "OPD" },
-  { code: "62", label: "물리치료실", pdf: "PT Room" },
   { code: "61", label: "채혈실", pdf: "Phlebotomy" },
+  { code: "62", label: "물리치료실", pdf: "PT Room" },
   { code: "63", label: "방사선실", pdf: "Radiology" }
 ];
 const MOMENTS = [
@@ -518,6 +515,7 @@ async function init() {
   fillChoices(D.momentChoices, "moment", MOMENTS);
   fillChoices(D.actionChoices, "action", ACTIONS);
   fillChoices(D.gloveChoices, "glove", GLOVES);
+  setCheckedValue("glove", "2");
   bindEvents();
 
   try {
@@ -557,6 +555,16 @@ function bindEvents() {
   D.jsonOutBtn.addEventListener("click", () => { void runLocked("json-export", D.jsonOutBtn, async () => { exportJson(); }); });
   D.jsonInBtn.addEventListener("click", () => D.jsonFile.click());
   D.jsonFile.addEventListener("change", () => { void runLocked("json-import", D.jsonInBtn, async () => { await importJson(); }); });
+  [D.startInput, D.endInput].forEach((input) => {
+    input.addEventListener("focus", () => {
+      const now = new Date();
+      input.value = now.toISOString().slice(11, 16);
+    });
+    input.addEventListener("click", () => {
+      const now = new Date();
+      input.value = now.toISOString().slice(11, 16);
+    });
+  });
   D.excelBtn.addEventListener("click", () => { void runLocked("excel", D.excelBtn, async () => { await exportExcel(); }); });
   D.pdfBtn.addEventListener("click", () => { void runLocked("pdf", D.pdfBtn, async () => { await exportPdf(); }); });
   D.zipBtn.addEventListener("click", () => { void runLocked("zip", D.zipBtn, async () => { await exportZip(); }); });
@@ -859,6 +867,7 @@ function resetForm() {
   clearCheckedValue("moment");
   clearCheckedValue("action");
   clearCheckedValue("glove");
+  setCheckedValue("glove", "2");
   D.saveBtn.textContent = "저장";
   D.cancelBtn.classList.add("hidden");
   clearFormMessage();
